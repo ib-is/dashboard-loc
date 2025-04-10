@@ -50,3 +50,23 @@ export interface Transaction {
   created_at: string;
   updated_at: string;
 }
+
+// Add a Database interface to help TypeScript understand our Supabase schema
+export interface Database {
+  public: {
+    Tables: {
+      proprietes: {
+        Row: Property;
+      };
+      colocataires_new: {
+        Row: Roommate;
+      };
+      transactions_new: {
+        Row: Transaction;
+      };
+      profils: {
+        Row: User;
+      };
+    };
+  };
+}

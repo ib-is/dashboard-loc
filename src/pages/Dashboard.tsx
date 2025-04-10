@@ -214,11 +214,12 @@ export default function Dashboard() {
               <CardContent>
                 <div className="text-2xl font-bold">{summary.propertyCount}</div>
                 <p className="text-xs text-muted-foreground">
-                  {user && summary.propertyCount > 0 && properties[0]?.statut === 'free' 
-                    ? `Limite: 1 propriété`
-                    : summary.propertyCount > 0 && properties[0]?.statut === 'plus'
-                    ? `Limite: 3 propriétés`
-                    : `Propriétés illimitées`}
+                  {user && properties[0] && 
+                    (properties[0].statut === 'free' 
+                      ? `Limite: 1 propriété`
+                      : properties[0].statut === 'plus'
+                      ? `Limite: 3 propriétés`
+                      : `Propriétés illimitées`)}
                 </p>
               </CardContent>
             </Card>
