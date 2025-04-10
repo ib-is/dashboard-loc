@@ -20,6 +20,11 @@ export interface Property {
   statut: 'actif' | 'inactif';
   created_at: string;
   updated_at: string;
+  prix_acquisition?: number;
+  credit_mensuel?: number;
+  jour_prelevement_credit?: number;
+  date_debut_credit?: string;
+  date_fin_credit?: string;
 }
 
 export interface Roommate {
@@ -49,6 +54,7 @@ export interface Transaction {
   categorie?: string;
   created_at: string;
   updated_at: string;
+  est_automatique?: boolean;
 }
 
 // Add a Database interface to help TypeScript understand our Supabase schema
@@ -57,15 +63,23 @@ export interface Database {
     Tables: {
       proprietes: {
         Row: Property;
+        Insert: Omit<Property, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Property, 'id' | 'created_at' | 'updated_at'>>;
       };
       colocataires_new: {
         Row: Roommate;
+        Insert: Omit<Roommate, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Roommate, 'id' | 'created_at' | 'updated_at'>>;
       };
       transactions_new: {
         Row: Transaction;
+        Insert: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Transaction, 'id' | 'created_at' | 'updated_at'>>;
       };
       profils: {
         Row: User;
+        Insert: Omit<User, 'id' | 'date_inscription'>;
+        Update: Partial<Omit<User, 'id' | 'date_inscription'>>;
       };
     };
   };

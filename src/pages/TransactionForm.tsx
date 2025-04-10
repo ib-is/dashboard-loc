@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Layout from '@/components/Layout';
 import { useForm } from 'react-hook-form';
+import { Info } from 'lucide-react';
 
 interface TransactionFormValues {
   type: string;
@@ -22,6 +23,7 @@ interface TransactionFormValues {
   colocataire_id?: string;
   propriete_id: string;
   statut: string;
+  est_automatique?: boolean;
 }
 
 export default function TransactionForm() {
@@ -31,24 +33,34 @@ export default function TransactionForm() {
   const { id } = useParams<{ id: string }>();
   const queryParams = new URLSearchParams(location.search);
   const initialPropertyId = queryParams.get('propertyId');
+  const initialRoommateId = queryParams.get('colocataireId');
+  const initialType = queryParams.get('type');
+  const initialCategory = queryParams.get('categorie');
+  const initialAmount = queryParams.get('montant');
   
   const [loading, setLoading] = useState(false);
   const [properties, setProperties] = useState<Property[]>([]);
   const [roommates, setRoommates] = useState<Roommate[]>([]);
+  const [selectedRoommate, setSelectedRoommate] = useState<Roommate | null>(null);
   const isEditMode = !!id;
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<TransactionFormValues>({
     defaultValues: {
-      type: 'revenu',
-      montant: 0,
+      type: initialType || 'revenu',
+      montant: initialAmount ? parseFloat(initialAmount) : 0,
       date: new Date().toISOString().substring(0, 10),
       statut: 'complété',
       propriete_id: initialPropertyId || '',
+      categorie: initialCategory || undefined,
+      colocataire_id: initialRoommateId || undefined,
+      est_automatique: false,
     }
   });
 
   const transactionType = watch('type');
   const selectedPropertyId = watch('propriete_id');
+  const selectedColocataireId = watch('colocataire_id');
+  const selectedCategorie = watch('categorie');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,10 +94,11 @@ export default function TransactionForm() {
             setValue('montant', data.montant);
             setValue('date', new Date(data.date).toISOString().substring(0, 10));
             setValue('description', data.description || '');
-            setValue('categorie', data.categorie || '');
-            setValue('colocataire_id', data.colocataire_id || '');
+            setValue('categorie', data.categorie || undefined);
+            setValue('colocataire_id', data.colocataire_id || undefined);
             setValue('propriete_id', data.propriete_id);
             setValue('statut', data.statut);
+            setValue('est_automatique', data.est_automatique || false);
             
             // Charger les colocataires pour la propriété de cette transaction
             await loadRoommates(data.propriete_id);
@@ -117,6 +130,42 @@ export default function TransactionForm() {
     }
   }, [selectedPropertyId, isEditMode]);
 
+  // Update selectedRoommate when colocataire_id changes
+  useEffect(() => {
+    if (selectedColocataireId) {
+      const roommate = roommates.find(r => r.id === selectedColocataireId);
+      if (roommate) {
+        setSelectedRoommate(roommate);
+        
+        // If category is loyer and type is revenu, auto-fill amount
+        if (selectedCategorie === 'loyer' && transactionType === 'revenu') {
+          setValue('montant', roommate.montant_loyer);
+        }
+      } else {
+        setSelectedRoommate(null);
+      }
+    } else {
+      setSelectedRoommate(null);
+    }
+  }, [selectedColocataireId, roommates, setValue, selectedCategorie, transactionType]);
+
+  // Auto-fill description for certain categories
+  useEffect(() => {
+    if (selectedCategorie === 'loyer' && !watch('description')) {
+      const roommateInfo = selectedRoommate 
+        ? `Loyer de ${selectedRoommate.prenom} ${selectedRoommate.nom}` 
+        : 'Paiement de loyer';
+      const month = new Date(watch('date')).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      setValue('description', `${roommateInfo} - ${month}`);
+    } else if (selectedCategorie === 'credit' && !watch('description')) {
+      const property = properties.find(p => p.id === selectedPropertyId);
+      if (property) {
+        const month = new Date(watch('date')).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        setValue('description', `Remboursement crédit ${property.nom} - ${month}`);
+      }
+    }
+  }, [selectedCategorie, selectedRoommate, setValue, watch, selectedPropertyId, properties]);
+
   const loadRoommates = async (propertyId: string) => {
     try {
       const { data, error } = await supabase
@@ -127,6 +176,14 @@ export default function TransactionForm() {
       
       if (error) throw error;
       setRoommates(data || []);
+      
+      // If we have an initialRoommateId, check if it matches one of the loaded roommates
+      if (initialRoommateId && data) {
+        const roommate = data.find(r => r.id === initialRoommateId);
+        if (roommate) {
+          setSelectedRoommate(roommate);
+        }
+      }
     } catch (error: any) {
       console.error('Erreur lors du chargement des colocataires:', error);
       toast({
@@ -169,6 +226,7 @@ export default function TransactionForm() {
             colocataire_id: data.colocataire_id || null,
             propriete_id: data.propriete_id,
             statut: data.statut,
+            est_automatique: data.est_automatique || false,
             updated_at: new Date().toISOString(),
           })
           .eq('id', id);
@@ -192,6 +250,7 @@ export default function TransactionForm() {
             colocataire_id: data.colocataire_id || null,
             propriete_id: data.propriete_id,
             statut: data.statut,
+            est_automatique: data.est_automatique || false,
           });
         
         if (error) throw error;
@@ -330,6 +389,7 @@ export default function TransactionForm() {
                         <SelectItem value="equipement">Équipement</SelectItem>
                         <SelectItem value="assurance">Assurance</SelectItem>
                         <SelectItem value="taxe">Taxes</SelectItem>
+                        <SelectItem value="credit">Crédit immobilier</SelectItem>
                         <SelectItem value="autre">Autre dépense</SelectItem>
                       </>
                     )}
@@ -374,6 +434,28 @@ export default function TransactionForm() {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Option pour les transactions automatiques */}
+              {selectedPropertyId && watch('categorie') === 'credit' && (
+                <div className="bg-blue-50 p-4 rounded-md border border-blue-200 flex gap-3">
+                  <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm text-blue-700 mb-2">
+                      Vous pouvez configurer cette transaction comme une transaction automatique pour le crédit immobilier.
+                      Elle apparaîtra chaque mois jusqu'à la date de fin du crédit.
+                    </p>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="est_automatique"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        {...register('est_automatique')}
+                      />
+                      <Label htmlFor="est_automatique">Cette transaction est automatique</Label>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex justify-between">
               <Button

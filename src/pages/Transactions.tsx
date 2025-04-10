@@ -1,12 +1,11 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Transaction, Property, Roommate } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Pencil, Trash2, Plus, ArrowDown, ArrowUp, Filter } from 'lucide-react';
+import { Pencil, Trash2, Plus, Filter } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import {
@@ -35,6 +34,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MonthlyTransactions from '@/components/transactions/MonthlyTransactions';
 
 export default function Transactions() {
   const { user } = useAuth();
@@ -49,7 +50,6 @@ export default function Transactions() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(initialPropertyId);
   const [loading, setLoading] = useState(true);
   
-  // Filtres
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [dateRangeStart, setDateRangeStart] = useState<string>('');
   const [dateRangeEnd, setDateRangeEnd] = useState<string>('');
@@ -62,7 +62,6 @@ export default function Transactions() {
       try {
         setLoading(true);
         
-        // Récupérer les propriétés
         const { data: propertiesData, error: propertiesError } = await supabase
           .from('proprietes')
           .select('*')
@@ -72,13 +71,11 @@ export default function Transactions() {
         if (propertiesError) throw propertiesError;
         setProperties(propertiesData || []);
         
-        // Si aucune propriété n'est encore sélectionnée et que des propriétés existent, sélectionnez la première
         if (!selectedPropertyId && propertiesData && propertiesData.length > 0) {
           setSelectedPropertyId(propertiesData[0].id);
         }
         
         if (selectedPropertyId) {
-          // Récupérer les colocataires de la propriété sélectionnée
           const { data: roommatesData, error: roommatesError } = await supabase
             .from('colocataires_new')
             .select('*')
@@ -87,7 +84,6 @@ export default function Transactions() {
           if (roommatesError) throw roommatesError;
           setRoommates(roommatesData || []);
           
-          // Récupérer les transactions
           const { data: transactionsData, error: transactionsError } = await supabase
             .from('transactions_new')
             .select('*')
@@ -117,7 +113,6 @@ export default function Transactions() {
 
   const handlePropertyChange = (propertyId: string) => {
     setSelectedPropertyId(propertyId);
-    // Mettre à jour l'URL sans recharger la page
     navigate(`/transactions?propertyId=${propertyId}`, { replace: true });
   };
 
@@ -161,13 +156,27 @@ export default function Transactions() {
     setSearchTerm('');
   };
 
+  const handleNavigateToTransactionForm = useCallback((colocataireId?: string) => {
+    if (!selectedPropertyId) return;
+    
+    const baseUrl = `/transactions/new?propertyId=${selectedPropertyId}`;
+    
+    if (colocataireId) {
+      const roommate = roommates.find(r => r.id === colocataireId);
+      if (roommate) {
+        navigate(`${baseUrl}&colocataireId=${colocataireId}&type=revenu&categorie=loyer&montant=${roommate.montant_loyer}`);
+        return;
+      }
+    }
+    
+    navigate(baseUrl);
+  }, [selectedPropertyId, navigate, roommates]);
+
   const filteredTransactions = transactions.filter(transaction => {
-    // Filtre par type
     if (typeFilter.length > 0 && !typeFilter.includes(transaction.type)) {
       return false;
     }
     
-    // Filtre par date
     if (dateRangeStart && new Date(transaction.date) < new Date(dateRangeStart)) {
       return false;
     }
@@ -176,7 +185,6 @@ export default function Transactions() {
       return false;
     }
     
-    // Filtre par terme de recherche
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       return (
@@ -189,16 +197,15 @@ export default function Transactions() {
     return true;
   });
 
-  // Calculer les totaux filtrés
-  const filteredRevenues = filteredTransactions
+  const totalRevenues = transactions
     .filter(t => t.type === 'revenu')
     .reduce((sum, t) => sum + Number(t.montant), 0);
   
-  const filteredExpenses = filteredTransactions
+  const totalExpenses = transactions
     .filter(t => t.type === 'depense')
     .reduce((sum, t) => sum + Number(t.montant), 0);
   
-  const filteredBalance = filteredRevenues - filteredExpenses;
+  const balance = totalRevenues - totalExpenses;
 
   return (
     <Layout>
@@ -224,7 +231,7 @@ export default function Transactions() {
           </div>
           
           {selectedPropertyId && (
-            <Button onClick={() => navigate(`/transactions/new?propertyId=${selectedPropertyId}`)}>
+            <Button onClick={() => handleNavigateToTransactionForm()}>
               <Plus className="mr-2 h-4 w-4" /> Ajouter une transaction
             </Button>
           )}
@@ -247,14 +254,13 @@ export default function Transactions() {
         </Card>
       ) : selectedPropertyId && (
         <>
-          {/* Statistiques financières */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Revenus totaux</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-green-600">{filteredRevenues.toFixed(2)} €</div>
+                <div className="text-2xl font-bold text-green-600">{totalRevenues.toFixed(2)} €</div>
               </CardContent>
             </Card>
             <Card>
@@ -262,7 +268,7 @@ export default function Transactions() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">Dépenses totales</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-red-600">{filteredExpenses.toFixed(2)} €</div>
+                <div className="text-2xl font-bold text-red-600">{totalExpenses.toFixed(2)} €</div>
               </CardContent>
             </Card>
             <Card>
@@ -270,192 +276,211 @@ export default function Transactions() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">Balance</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`text-2xl font-bold ${filteredBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {filteredBalance.toFixed(2)} €
+                <div className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {balance.toFixed(2)} €
                 </div>
               </CardContent>
             </Card>
           </div>
           
-          {/* Filtres et recherche */}
-          <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
-            <div className="flex gap-2 w-full md:w-auto">
-              <Input
-                placeholder="Rechercher..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="max-w-[200px]"
-              />
+          <Tabs defaultValue="monthly" className="w-full">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
+              <TabsList>
+                <TabsTrigger value="monthly">Vue mensuelle</TabsTrigger>
+                <TabsTrigger value="all">Toutes les transactions</TabsTrigger>
+              </TabsList>
               
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex gap-2">
-                    <Filter className="h-4 w-4" />
-                    Filtres
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80">
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Filtrer par type</h4>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="revenu"
-                        checked={typeFilter.includes('revenu')}
-                        onCheckedChange={() => handleTypeFilterChange('revenu')}
-                      />
-                      <Label htmlFor="revenu" className="flex items-center gap-1">
-                        <ArrowUp className="h-4 w-4 text-green-500" /> Revenus
-                      </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="depense"
-                        checked={typeFilter.includes('depense')}
-                        onCheckedChange={() => handleTypeFilterChange('depense')}
-                      />
-                      <Label htmlFor="depense" className="flex items-center gap-1">
-                        <ArrowDown className="h-4 w-4 text-red-500" /> Dépenses
-                      </Label>
-                    </div>
-                    
-                    <h4 className="font-medium">Plage de dates</h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label htmlFor="date-start">Début</Label>
-                        <Input
-                          id="date-start"
-                          type="date"
-                          value={dateRangeStart}
-                          onChange={(e) => setDateRangeStart(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="date-end">Fin</Label>
-                        <Input
-                          id="date-end"
-                          type="date"
-                          value={dateRangeEnd}
-                          onChange={(e) => setDateRangeEnd(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    
-                    <Button variant="outline" size="sm" onClick={resetFilters} className="w-full">
-                      Réinitialiser les filtres
+              <div className="flex gap-2 w-full md:w-auto">
+                <Input
+                  placeholder="Rechercher..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="max-w-[200px]"
+                />
+                
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex gap-2">
+                      <Filter className="h-4 w-4" />
+                      Filtres
                     </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-4">
+                      <h4 className="font-medium">Filtrer par type</h4>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="revenu"
+                          checked={typeFilter.includes('revenu')}
+                          onCheckedChange={() => handleTypeFilterChange('revenu')}
+                        />
+                        <Label htmlFor="revenu" className="flex items-center gap-1">
+                          <ArrowUp className="h-4 w-4 text-green-500" /> Revenus
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id="depense"
+                          checked={typeFilter.includes('depense')}
+                          onCheckedChange={() => handleTypeFilterChange('depense')}
+                        />
+                        <Label htmlFor="depense" className="flex items-center gap-1">
+                          <ArrowDown className="h-4 w-4 text-red-500" /> Dépenses
+                        </Label>
+                      </div>
+                      
+                      <h4 className="font-medium">Plage de dates</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label htmlFor="date-start">Début</Label>
+                          <Input
+                            id="date-start"
+                            type="date"
+                            value={dateRangeStart}
+                            onChange={(e) => setDateRangeStart(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor="date-end">Fin</Label>
+                          <Input
+                            id="date-end"
+                            type="date"
+                            value={dateRangeEnd}
+                            onChange={(e) => setDateRangeEnd(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      
+                      <Button variant="outline" size="sm" onClick={resetFilters} className="w-full">
+                        Réinitialiser les filtres
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
-          </div>
-          
-          {/* Liste des transactions */}
-          {loading ? (
-            <div className="h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          ) : filteredTransactions.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-muted">
-                    <th className="text-left p-3 font-medium">Date</th>
-                    <th className="text-left p-3 font-medium">Type</th>
-                    <th className="text-left p-3 font-medium">Description</th>
-                    <th className="text-left p-3 font-medium">Montant</th>
-                    <th className="text-left p-3 font-medium">Colocataire</th>
-                    <th className="text-right p-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTransactions.map((transaction) => {
-                    const roommate = roommates.find(r => r.id === transaction.colocataire_id);
-                    
-                    return (
-                      <tr key={transaction.id} className="border-b hover:bg-muted/50">
-                        <td className="p-3">
-                          {new Date(transaction.date).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center">
-                            {transaction.type === 'revenu' ? (
-                              <ArrowUp className="h-4 w-4 mr-1 text-green-500" />
-                            ) : (
-                              <ArrowDown className="h-4 w-4 mr-1 text-red-500" />
-                            )}
-                            {transaction.type === 'revenu' ? 'Revenu' : 'Dépense'}
-                          </div>
-                        </td>
-                        <td className="p-3">
-                          <div>
-                            <p className="font-medium">{transaction.description || '-'}</p>
-                            {transaction.categorie && (
-                              <p className="text-xs text-muted-foreground">{transaction.categorie}</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className={`p-3 font-medium ${transaction.type === 'revenu' ? 'text-green-600' : 'text-red-600'}`}>
-                          {transaction.type === 'revenu' ? '+' : '-'}{Number(transaction.montant).toFixed(2)} €
-                        </td>
-                        <td className="p-3">
-                          {roommate ? `${roommate.prenom} ${roommate.nom}` : '-'}
-                        </td>
-                        <td className="p-3 text-right">
-                          <div className="flex justify-end items-center space-x-2">
-                            <Button
-                              variant="outline"
-                              size="icon"
-                              onClick={() => navigate(`/transactions/edit/${transaction.id}`)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="icon">
-                                  <Trash2 className="h-4 w-4 text-red-500" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Supprimer la transaction</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action est irréversible.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDeleteTransaction(transaction.id)}
-                                    className="bg-red-500 hover:bg-red-600"
+            
+            {loading ? (
+              <div className="h-64 flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+              </div>
+            ) : filteredTransactions.length > 0 ? (
+              <>
+                <TabsContent value="monthly" className="mt-4">
+                  <MonthlyTransactions
+                    transactions={filteredTransactions}
+                    properties={properties}
+                    roommates={roommates}
+                    selectedPropertyId={selectedPropertyId}
+                    onNavigateToTransactionForm={handleNavigateToTransactionForm}
+                  />
+                </TabsContent>
+                
+                <TabsContent value="all" className="mt-4">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
+                      <thead>
+                        <tr className="bg-muted">
+                          <th className="text-left p-3 font-medium">Date</th>
+                          <th className="text-left p-3 font-medium">Type</th>
+                          <th className="text-left p-3 font-medium">Description</th>
+                          <th className="text-left p-3 font-medium">Montant</th>
+                          <th className="text-left p-3 font-medium">Colocataire</th>
+                          <th className="text-right p-3 font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTransactions.map((transaction) => {
+                          const roommate = roommates.find(r => r.id === transaction.colocataire_id);
+                          
+                          return (
+                            <tr key={transaction.id} className="border-b hover:bg-muted/50">
+                              <td className="p-3">
+                                {new Date(transaction.date).toLocaleDateString('fr-FR')}
+                              </td>
+                              <td className="p-3">
+                                <div className="flex items-center">
+                                  {transaction.type === 'revenu' ? (
+                                    <ArrowUp className="h-4 w-4 mr-1 text-green-500" />
+                                  ) : (
+                                    <ArrowDown className="h-4 w-4 mr-1 text-red-500" />
+                                  )}
+                                  {transaction.type === 'revenu' ? 'Revenu' : 'Dépense'}
+                                </div>
+                              </td>
+                              <td className="p-3">
+                                <div>
+                                  <p className="font-medium">{transaction.description || '-'}</p>
+                                  {transaction.categorie && (
+                                    <p className="text-xs text-muted-foreground">{transaction.categorie}</p>
+                                  )}
+                                </div>
+                              </td>
+                              <td className={`p-3 font-medium ${transaction.type === 'revenu' ? 'text-green-600' : 'text-red-600'}`}>
+                                {transaction.type === 'revenu' ? '+' : '-'}{Number(transaction.montant).toFixed(2)} €
+                              </td>
+                              <td className="p-3">
+                                {roommate ? `${roommate.prenom} ${roommate.nom}` : '-'}
+                              </td>
+                              <td className="p-3 text-right">
+                                <div className="flex justify-end items-center space-x-2">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => navigate(`/transactions/edit/${transaction.id}`)}
                                   >
-                                    Supprimer
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <Card>
-              <CardHeader>
-                <CardTitle>Aucune transaction</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="mb-4">
-                  Vous n'avez pas encore ajouté de transaction pour cette propriété.
-                </p>
-                <Button onClick={() => navigate(`/transactions/new?propertyId=${selectedPropertyId}`)}>
-                  <Plus className="mr-2 h-4 w-4" /> Ajouter une transaction
-                </Button>
-              </CardContent>
-            </Card>
-          )}
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button variant="outline" size="icon">
+                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Supprimer la transaction</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Êtes-vous sûr de vouloir supprimer cette transaction ? Cette action est irréversible.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleDeleteTransaction(transaction.id)}
+                                          className="bg-red-500 hover:bg-red-600"
+                                        >
+                                          Supprimer
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </TabsContent>
+              </>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Aucune transaction</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="mb-4">
+                    Vous n'avez pas encore ajouté de transaction pour cette propriété.
+                  </p>
+                  <Button onClick={() => handleNavigateToTransactionForm()}>
+                    <Plus className="mr-2 h-4 w-4" /> Ajouter une transaction
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+          </Tabs>
         </>
       )}
     </Layout>
