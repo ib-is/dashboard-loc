@@ -104,6 +104,59 @@ export type Database = {
           },
         ]
       }
+      colocataires_new: {
+        Row: {
+          created_at: string
+          date_entree: string
+          date_sortie: string | null
+          email: string | null
+          id: string
+          montant_loyer: number
+          nom: string
+          prenom: string
+          propriete_id: string
+          statut: string
+          telephone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_entree: string
+          date_sortie?: string | null
+          email?: string | null
+          id?: string
+          montant_loyer: number
+          nom: string
+          prenom: string
+          propriete_id: string
+          statut?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_entree?: string
+          date_sortie?: string | null
+          email?: string | null
+          id?: string
+          montant_loyer?: number
+          nom?: string
+          prenom?: string
+          propriete_id?: string
+          statut?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "colocataires_new_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contrats: {
         Row: {
           actif: boolean
@@ -325,20 +378,26 @@ export type Database = {
       profils: {
         Row: {
           created_at: string
+          date_inscription: string
           email: string
           id: string
+          niveau_compte: string
           nom_complet: string | null
         }
         Insert: {
           created_at?: string
+          date_inscription?: string
           email: string
           id: string
+          niveau_compte?: string
           nom_complet?: string | null
         }
         Update: {
           created_at?: string
+          date_inscription?: string
           email?: string
           id?: string
+          niveau_compte?: string
           nom_complet?: string | null
         }
         Relationships: []
@@ -392,6 +451,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      proprietes: {
+        Row: {
+          adresse: string
+          code_postal: string
+          created_at: string
+          id: string
+          nom: string
+          nombre_chambres: number
+          pays: string
+          statut: string
+          type: string
+          updated_at: string
+          user_id: string
+          ville: string
+        }
+        Insert: {
+          adresse: string
+          code_postal: string
+          created_at?: string
+          id?: string
+          nom: string
+          nombre_chambres?: number
+          pays?: string
+          statut?: string
+          type?: string
+          updated_at?: string
+          user_id: string
+          ville: string
+        }
+        Update: {
+          adresse?: string
+          code_postal?: string
+          created_at?: string
+          id?: string
+          nom?: string
+          nombre_chambres?: number
+          pays?: string
+          statut?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+          ville?: string
+        }
+        Relationships: []
       }
       Tenant: {
         Row: {
@@ -500,6 +604,63 @@ export type Database = {
             columns: ["contrat_id"]
             isOneToOne: false
             referencedRelation: "contrats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions_new: {
+        Row: {
+          categorie: string | null
+          colocataire_id: string | null
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          montant: number
+          propriete_id: string
+          statut: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          categorie?: string | null
+          colocataire_id?: string | null
+          created_at?: string
+          date: string
+          description?: string | null
+          id?: string
+          montant: number
+          propriete_id: string
+          statut?: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          categorie?: string | null
+          colocataire_id?: string | null
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          montant?: number
+          propriete_id?: string
+          statut?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_new_colocataire_id_fkey"
+            columns: ["colocataire_id"]
+            isOneToOne: false
+            referencedRelation: "colocataires_new"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_new_propriete_id_fkey"
+            columns: ["propriete_id"]
+            isOneToOne: false
+            referencedRelation: "proprietes"
             referencedColumns: ["id"]
           },
         ]
