@@ -1,7 +1,7 @@
 
 import { Property, Transaction } from '@/types';
 import { Button } from '@/components/ui/button';
-import { FileText, FilePdf, Download, Calendar } from 'lucide-react';
+import { FileText, FileDown, Download, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
@@ -115,7 +115,7 @@ export function DashboardReports({ properties, transactions }: DashboardReportsP
             className="justify-start"
             onClick={() => handleGenerateReport('monthly-summary')}
           >
-            <FilePdf className="mr-2 h-4 w-4" />
+            <FileDown className="mr-2 h-4 w-4" />
             Synthèse mensuelle
           </Button>
           <Button 
@@ -123,7 +123,7 @@ export function DashboardReports({ properties, transactions }: DashboardReportsP
             className="justify-start"
             onClick={() => handleGenerateReport('balance-sheet')}
           >
-            <FilePdf className="mr-2 h-4 w-4" />
+            <FileDown className="mr-2 h-4 w-4" />
             Bilan financier
           </Button>
         </div>
@@ -140,7 +140,7 @@ export function DashboardReports({ properties, transactions }: DashboardReportsP
             className="justify-start"
             onClick={() => handleGenerateReport('rent-receipts')}
           >
-            <FilePdf className="mr-2 h-4 w-4" />
+            <FileDown className="mr-2 h-4 w-4" />
             Quittances de loyer
           </Button>
           <Button 
@@ -148,7 +148,7 @@ export function DashboardReports({ properties, transactions }: DashboardReportsP
             className="justify-start"
             onClick={() => handleGenerateReport('payment-notice')}
           >
-            <FilePdf className="mr-2 h-4 w-4" />
+            <FileDown className="mr-2 h-4 w-4" />
             Avis d'échéance
           </Button>
         </div>
@@ -156,3 +156,4 @@ export function DashboardReports({ properties, transactions }: DashboardReportsP
     </div>
   );
 }
+

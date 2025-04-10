@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { Property, Transaction } from '@/types';
 import { Button } from '@/components/ui/button';
