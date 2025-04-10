@@ -309,7 +309,7 @@ export default function TransactionForm() {
               <div className="space-y-2">
                 <Label htmlFor="categorie">Catégorie</Label>
                 <Select
-                  value={watch('categorie') || ''}
+                  value={watch('categorie') || undefined}
                   onValueChange={(value) => setValue('categorie', value)}
                 >
                   <SelectTrigger>
@@ -341,14 +341,13 @@ export default function TransactionForm() {
                 <div className="space-y-2">
                   <Label htmlFor="colocataire_id">Colocataire concerné</Label>
                   <Select
-                    value={watch('colocataire_id') || ''}
+                    value={watch('colocataire_id') || undefined}
                     onValueChange={(value) => setValue('colocataire_id', value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionnez un colocataire (optionnel)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Aucun colocataire</SelectItem>
                       {roommates.map((roommate) => (
                         <SelectItem key={roommate.id} value={roommate.id}>
                           {roommate.prenom} {roommate.nom}

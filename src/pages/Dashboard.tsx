@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -215,9 +214,9 @@ export default function Dashboard() {
                 <div className="text-2xl font-bold">{summary.propertyCount}</div>
                 <p className="text-xs text-muted-foreground">
                   {user && properties[0] && 
-                    (properties[0].statut === 'free' 
+                    (user.niveau_compte === 'free' 
                       ? `Limite: 1 propriété`
-                      : properties[0].statut === 'plus'
+                      : user.niveau_compte === 'plus'
                       ? `Limite: 3 propriétés`
                       : `Propriétés illimitées`)}
                 </p>
