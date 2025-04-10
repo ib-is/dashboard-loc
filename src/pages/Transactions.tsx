@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Transaction, Property, Roommate } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Pencil, Trash2, Plus, Filter } from 'lucide-react';
+import { Pencil, Trash2, Plus, Filter, ArrowUp, ArrowDown, Calendar } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
 import {
