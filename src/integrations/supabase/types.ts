@@ -457,10 +457,15 @@ export type Database = {
           adresse: string
           code_postal: string
           created_at: string
+          credit_mensuel: number | null
+          date_debut_credit: string | null
+          date_fin_credit: string | null
           id: string
+          jour_prelevement_credit: number | null
           nom: string
           nombre_chambres: number
           pays: string
+          prix_acquisition: number | null
           statut: string
           type: string
           updated_at: string
@@ -471,10 +476,15 @@ export type Database = {
           adresse: string
           code_postal: string
           created_at?: string
+          credit_mensuel?: number | null
+          date_debut_credit?: string | null
+          date_fin_credit?: string | null
           id?: string
+          jour_prelevement_credit?: number | null
           nom: string
           nombre_chambres?: number
           pays?: string
+          prix_acquisition?: number | null
           statut?: string
           type?: string
           updated_at?: string
@@ -485,10 +495,15 @@ export type Database = {
           adresse?: string
           code_postal?: string
           created_at?: string
+          credit_mensuel?: number | null
+          date_debut_credit?: string | null
+          date_fin_credit?: string | null
           id?: string
+          jour_prelevement_credit?: number | null
           nom?: string
           nombre_chambres?: number
           pays?: string
+          prix_acquisition?: number | null
           statut?: string
           type?: string
           updated_at?: string
@@ -615,6 +630,7 @@ export type Database = {
           created_at: string
           date: string
           description: string | null
+          est_automatique: boolean | null
           id: string
           montant: number
           propriete_id: string
@@ -628,6 +644,7 @@ export type Database = {
           created_at?: string
           date: string
           description?: string | null
+          est_automatique?: boolean | null
           id?: string
           montant: number
           propriete_id: string
@@ -641,6 +658,7 @@ export type Database = {
           created_at?: string
           date?: string
           description?: string | null
+          est_automatique?: boolean | null
           id?: string
           montant?: number
           propriete_id?: string
