@@ -1,9 +1,9 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { createAutomaticMortgageTransactions } from '@/utils/automaticTransactions';
 
 interface AuthContextType {
   session: Session | null;
@@ -29,6 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (event, newSession) => {
         setSession(newSession);
         setUser(newSession?.user ?? null);
+        
+        // If a user signed in, check and create automatic transactions
+        if (event === 'SIGNED_IN' && newSession?.user) {
+          createAutomaticMortgageTransactions(newSession.user.id)
+            .then(count => {
+              if (count > 0) {
+                toast({
+                  title: "Transactions automatiques",
+                  description: `${count} transaction(s) de crédit immobilier ont été créées automatiquement.`,
+                });
+              }
+            })
+            .catch(error => {
+              console.error('Error creating automatic transactions:', error);
+            });
+        }
       }
     );
 
@@ -36,11 +52,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
+      
+      // Check for automatic transactions if user is logged in
+      if (currentSession?.user) {
+        createAutomaticMortgageTransactions(currentSession.user.id)
+          .then(count => {
+            if (count > 0) {
+              toast({
+                title: "Transactions automatiques",
+                description: `${count} transaction(s) de crédit immobilier ont été créées automatiquement.`,
+              });
+            }
+          })
+          .catch(error => {
+            console.error('Error creating automatic transactions:', error);
+          });
+      }
+      
       setLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signUp = async (email: string, password: string, metadata: { nom_complet: string }) => {
     setLoading(true);
