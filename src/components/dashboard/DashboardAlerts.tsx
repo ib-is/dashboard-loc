@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { Property, Transaction } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -51,7 +52,17 @@ export function DashboardAlerts({
     fetchRoommates();
   }, [properties]);
 
-  const alerts = useMemo(() => {
+  // Define a proper type for alerts that includes all possible properties
+  type Alert = {
+    type: string;
+    title: string;
+    description: string;
+    property?: Property;
+    roommate?: Roommate;
+    severity: string;
+  };
+
+  const alerts = useMemo<Alert[]>(() => {
     if (roommates.length === 0) return [];
 
     const today = new Date();
@@ -158,7 +169,7 @@ export function DashboardAlerts({
               <h3 className="font-medium">{alert.title}</h3>
               <p className="text-sm text-gray-600 mt-1">{alert.description}</p>
               
-              {alert.type === 'missing_payment' && (
+              {alert.type === 'missing_payment' && alert.property && alert.roommate && (
                 <div className="mt-3">
                   <Button 
                     size="sm"
@@ -169,7 +180,7 @@ export function DashboardAlerts({
                 </div>
               )}
               
-              {alert.type === 'late_mortgage' && (
+              {alert.type === 'late_mortgage' && alert.property && (
                 <div className="mt-3">
                   <Button 
                     size="sm"
