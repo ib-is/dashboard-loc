@@ -56,7 +56,6 @@ export interface Transaction {
   est_automatique?: boolean;
 }
 
-// Add a Database interface to help TypeScript understand our Supabase schema
 export interface Database {
   public: {
     Tables: {

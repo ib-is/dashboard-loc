@@ -40,7 +40,7 @@ export default function Dashboard() {
         // If there are properties, fetch transactions
         if (data && data.length > 0) {
           // Determine period based on user account level
-          const userNiveau = user.niveau_compte || 'free';
+          const userNiveau = user?.niveau_compte || 'free';
           const period = userNiveau === 'pro' ? 12 : userNiveau === 'plus' ? 6 : 3;
           const startDate = format(subMonths(startOfMonth(new Date()), period - 1), 'yyyy-MM-dd');
           
@@ -87,7 +87,7 @@ export default function Dashboard() {
     const statsComponent = <DashboardStats transactions={filteredTransactions} />;
 
     // Default to free if niveau_compte is not defined
-    const userNiveau = user.niveau_compte || 'free';
+    const userNiveau = user?.niveau_compte || 'free';
 
     // Render dashboard based on account level
     switch (userNiveau) {
