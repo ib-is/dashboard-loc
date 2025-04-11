@@ -18,33 +18,19 @@ interface FormValues {
 export default function Auth() {
   const { signIn, signUp, loading } = useAuth();
   const [activeTab, setActiveTab] = useState('login');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const { register: registerLogin, handleSubmit: handleLoginSubmit, formState: { errors: loginErrors } } = useForm<FormValues>();
   const { register: registerSignup, handleSubmit: handleSignupSubmit, formState: { errors: signupErrors } } = useForm<FormValues>();
 
   const onLogin = async (data: FormValues) => {
-    setIsSubmitting(true);
-    try {
-      await signIn(data.email, data.password);
-    } finally {
-      setIsSubmitting(false);
-    }
+    await signIn(data.email, data.password);
   };
 
   const onSignup = async (data: FormValues) => {
-    setIsSubmitting(true);
-    try {
-      if (data.nom_complet) {
-        await signUp(data.email, data.password, { nom_complet: data.nom_complet });
-      }
-    } finally {
-      setIsSubmitting(false);
+    if (data.nom_complet) {
+      await signUp(data.email, data.password, { nom_complet: data.nom_complet });
     }
   };
-
-  // Calculate if buttons should be disabled based on local submission state, not global loading state
-  const isButtonDisabled = isSubmitting;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -96,8 +82,8 @@ export default function Auth() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isButtonDisabled}>
-                    {isSubmitting ? 'Connexion en cours...' : 'Se connecter'}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Connexion en cours...' : 'Se connecter'}
                   </Button>
                 </CardFooter>
               </form>
@@ -152,8 +138,8 @@ export default function Auth() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type="submit" className="w-full" disabled={isButtonDisabled}>
-                    {isSubmitting ? 'Inscription en cours...' : 'S\'inscrire'}
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Inscription en cours...' : 'S\'inscrire'}
                   </Button>
                 </CardFooter>
               </form>
