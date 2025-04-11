@@ -1,11 +1,9 @@
-
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Session } from '@supabase/supabase-js';
+import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { createAutomaticMortgageTransactions } from '@/utils/automaticTransactions';
-import { User } from '@/types';
 
 interface AuthContextType {
   session: Session | null;
@@ -28,25 +26,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, newSession) => {
+      (event, newSession) => {
         setSession(newSession);
+        setUser(newSession?.user ?? null);
         
-        if (newSession?.user) {
-          // Fetch user profile data to get niveau_compte
-          const { data } = await supabase
-            .from('profils')
-            .select('niveau_compte, date_inscription')
-            .eq('id', newSession.user.id)
-            .single();
-            
-          // Extend the user object with profile data
-          setUser({
-            ...newSession.user,
-            niveau_compte: data?.niveau_compte || 'free',
-            date_inscription: data?.date_inscription
-          });
-          
-          // Check and create automatic transactions
+        // If a user signed in, check and create automatic transactions
+        if (event === 'SIGNED_IN' && newSession?.user) {
           createAutomaticMortgageTransactions(newSession.user.id)
             .then(count => {
               if (count > 0) {
@@ -59,32 +44,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .catch(error => {
               console.error('Error creating automatic transactions:', error);
             });
-        } else {
-          setUser(null);
         }
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+    supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
       setSession(currentSession);
+      setUser(currentSession?.user ?? null);
       
+      // Check for automatic transactions if user is logged in
       if (currentSession?.user) {
-        // Fetch user profile data to get niveau_compte
-        const { data } = await supabase
-          .from('profils')
-          .select('niveau_compte, date_inscription')
-          .eq('id', currentSession.user.id)
-          .single();
-          
-        // Extend the user object with profile data
-        setUser({
-          ...currentSession.user,
-          niveau_compte: data?.niveau_compte || 'free',
-          date_inscription: data?.date_inscription
-        });
-        
-        // Check for automatic transactions
         createAutomaticMortgageTransactions(currentSession.user.id)
           .then(count => {
             if (count > 0) {
@@ -97,8 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .catch(error => {
             console.error('Error creating automatic transactions:', error);
           });
-      } else {
-        setUser(null);
       }
       
       setLoading(false);
