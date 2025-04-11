@@ -39,10 +39,12 @@ export default function Dashboard() {
         
         // If there are properties, fetch transactions
         if (data && data.length > 0) {
-          const period = user.niveau_compte === 'pro' ? 12 : user.niveau_compte === 'plus' ? 6 : 3;
+          // Determine period based on user account level
+          const userNiveau = user.niveau_compte || 'free';
+          const period = userNiveau === 'pro' ? 12 : userNiveau === 'plus' ? 6 : 3;
           const startDate = format(subMonths(startOfMonth(new Date()), period - 1), 'yyyy-MM-dd');
           
-          // Fetch transactions for the last 12 months for all properties
+          // Fetch transactions for all properties
           const { data: transactionsData, error: transactionsError } = await supabase
             .from('transactions_new')
             .select('*')
@@ -84,8 +86,11 @@ export default function Dashboard() {
     // Basic stats that appear in all dashboards
     const statsComponent = <DashboardStats transactions={filteredTransactions} />;
 
+    // Default to free if niveau_compte is not defined
+    const userNiveau = user.niveau_compte || 'free';
+
     // Render dashboard based on account level
-    switch (user.niveau_compte) {
+    switch (userNiveau) {
       case 'plus':
         return (
           <div className="space-y-6">

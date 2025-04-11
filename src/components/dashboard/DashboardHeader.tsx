@@ -20,8 +20,10 @@ export function DashboardHeader({
 }: DashboardHeaderProps) {
   const navigate = useNavigate();
   
-  const propertyLimit = user?.niveau_compte === 'free' ? 1 : 
-                       user?.niveau_compte === 'plus' ? 3 : Infinity;
+  // Handle the case where user or user.niveau_compte might be undefined
+  const userNiveau = user?.niveau_compte || 'free';
+  const propertyLimit = userNiveau === 'free' ? 1 : 
+                       userNiveau === 'plus' ? 3 : Infinity;
 
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
@@ -29,7 +31,7 @@ export function DashboardHeader({
       
       {properties.length > 0 && (
         <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto mt-2 md:mt-0">
-          {user?.niveau_compte !== 'free' && (
+          {userNiveau !== 'free' && (
             <div className="flex gap-2">
               <Select
                 value={selectedProperty}
