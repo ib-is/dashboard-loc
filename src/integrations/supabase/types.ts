@@ -688,16 +688,19 @@ export type Database = {
           createdAt: string
           email: string
           id: string
+          niveau_compte: string | null
         }
         Insert: {
           createdAt?: string
           email: string
           id: string
+          niveau_compte?: string | null
         }
         Update: {
           createdAt?: string
           email?: string
           id?: string
+          niveau_compte?: string | null
         }
         Relationships: []
       }
