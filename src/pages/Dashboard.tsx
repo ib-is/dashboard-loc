@@ -40,7 +40,7 @@ export default function Dashboard() {
         // If there are properties, fetch transactions
         if (data && data.length > 0) {
           // Determine period based on user account level
-          const userNiveau = user?.niveau_compte || 'free';
+          const userNiveau = await fetchUserNiveau(user.id);
           const period = userNiveau === 'pro' ? 12 : userNiveau === 'plus' ? 6 : 3;
           const startDate = format(subMonths(startOfMonth(new Date()), period - 1), 'yyyy-MM-dd');
           
@@ -65,6 +65,22 @@ export default function Dashboard() {
       } finally {
         setLoading(false);
       }
+    };
+
+    // Fetch user niveau from profils table
+    const fetchUserNiveau = async (userId: string) => {
+      const { data, error } = await supabase
+        .from('profils')
+        .select('niveau_compte')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching user niveau:', error);
+        return 'free'; // Default to free if error
+      }
+
+      return data?.niveau_compte || 'free';
     };
 
     fetchProperties();
