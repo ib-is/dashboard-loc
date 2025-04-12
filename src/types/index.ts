@@ -1,9 +1,8 @@
-export interface User {
-  id: string;
-  email: string;
-  nom_complet?: string;
-  niveau_compte: 'free' | 'plus' | 'pro';
-  date_inscription: string;
+import { User as SupabaseUser } from '@supabase/supabase-js';
+
+export interface User extends SupabaseUser {
+  niveau_compte?: 'free' | 'plus' | 'pro';
+  date_inscription?: string;
 }
 
 export interface Property {
@@ -75,9 +74,26 @@ export interface Database {
         Update: Partial<Omit<Transaction, 'id' | 'created_at' | 'updated_at'>>;
       };
       profils: {
-        Row: User;
-        Insert: Omit<User, 'id' | 'date_inscription'>;
-        Update: Partial<Omit<User, 'id' | 'date_inscription'>>;
+        Row: {
+          id: string;
+          email: string;
+          niveau_compte: 'free' | 'plus' | 'pro';
+          date_inscription: string;
+          nom_complet?: string;
+          created_at: string;
+        };
+        Insert: Omit<{
+          id: string;
+          email: string;
+          niveau_compte: 'free' | 'plus' | 'pro';
+          nom_complet?: string;
+        }, 'id' | 'date_inscription'>;
+        Update: Partial<Omit<{
+          id: string;
+          email: string;
+          niveau_compte: 'free' | 'plus' | 'pro';
+          nom_complet?: string;
+        }, 'id' | 'date_inscription'>>;
       };
     };
   };

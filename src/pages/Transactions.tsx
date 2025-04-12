@@ -6,9 +6,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Transaction, Property, Roommate } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Pencil, Trash2, Plus, Filter, ArrowUp, ArrowDown, Calendar } from 'lucide-react';
+import { Pencil, Trash2, Plus, Filter, ArrowUp, ArrowDown, Calendar, Search } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import Layout from '@/components/Layout';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,7 @@ export default function Transactions() {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const initialPropertyId = queryParams.get('propertyId');
+  const isMobile = useIsMobile();
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -55,6 +57,7 @@ export default function Transactions() {
   const [dateRangeStart, setDateRangeStart] = useState<string>('');
   const [dateRangeEnd, setDateRangeEnd] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -210,33 +213,137 @@ export default function Transactions() {
 
   return (
     <Layout>
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold">Transactions</h1>
-        <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
-          <div className="w-full md:w-[250px]">
-            <Select
-              value={selectedPropertyId || ''}
-              onValueChange={handlePropertyChange}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez une propriété" />
-              </SelectTrigger>
-              <SelectContent>
-                {properties.map((property) => (
-                  <SelectItem key={property.id} value={property.id}>
-                    {property.nom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+      <div className="flex flex-col space-y-4 mb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <h1 className="text-2xl font-bold">Transactions</h1>
           
-          {selectedPropertyId && (
-            <Button onClick={() => handleNavigateToTransactionForm()}>
-              <Plus className="mr-2 h-4 w-4" /> Ajouter une transaction
-            </Button>
-          )}
+          {/* Property selector and add button */}
+          <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+            <div className="w-full md:w-[250px]">
+              <Select
+                value={selectedPropertyId || ''}
+                onValueChange={handlePropertyChange}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionnez une propriété" />
+                </SelectTrigger>
+                <SelectContent>
+                  {properties.map((property) => (
+                    <SelectItem key={property.id} value={property.id}>
+                      {property.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {selectedPropertyId && (
+              <Button onClick={() => handleNavigateToTransactionForm()}>
+                <Plus className="mr-2 h-4 w-4" /> 
+                {!isMobile && "Ajouter une transaction"}
+                {isMobile && "Ajouter"}
+              </Button>
+            )}
+          </div>
         </div>
+        
+        {/* Search bar for mobile - togglable */}
+        {isMobile && (
+          <div className="flex items-center gap-2">
+            {isSearchOpen ? (
+              <div className="flex-1">
+                <Input
+                  placeholder="Rechercher..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                  autoFocus
+                />
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                className="flex-1 flex justify-between items-center"
+                onClick={() => setIsSearchOpen(true)}
+              >
+                <span>Rechercher</span>
+                <Search className="h-4 w-4" />
+              </Button>
+            )}
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Filtrer par type</h4>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="revenu-mobile"
+                      checked={typeFilter.includes('revenu')}
+                      onCheckedChange={() => handleTypeFilterChange('revenu')}
+                    />
+                    <Label htmlFor="revenu-mobile" className="flex items-center gap-1">
+                      <ArrowUp className="h-4 w-4 text-green-500" /> Revenus
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="depense-mobile"
+                      checked={typeFilter.includes('depense')}
+                      onCheckedChange={() => handleTypeFilterChange('depense')}
+                    />
+                    <Label htmlFor="depense-mobile" className="flex items-center gap-1">
+                      <ArrowDown className="h-4 w-4 text-red-500" /> Dépenses
+                    </Label>
+                  </div>
+                  
+                  <h4 className="font-medium">Plage de dates</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="date-start-mobile">Début</Label>
+                      <Input
+                        id="date-start-mobile"
+                        type="date"
+                        value={dateRangeStart}
+                        onChange={(e) => setDateRangeStart(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="date-end-mobile">Fin</Label>
+                      <Input
+                        id="date-end-mobile"
+                        type="date"
+                        value={dateRangeEnd}
+                        onChange={(e) => setDateRangeEnd(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  
+                  <Button variant="outline" size="sm" onClick={resetFilters} className="w-full">
+                    Réinitialiser les filtres
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+            
+            {isSearchOpen && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setSearchTerm('');
+                }}
+              >
+                <ArrowDown className="h-4 w-4 rotate-45" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
       
       {properties.length === 0 ? (
@@ -286,79 +393,81 @@ export default function Transactions() {
           
           <Tabs defaultValue="monthly" className="w-full">
             <div className="flex flex-col md:flex-row justify-between items-center mb-4 gap-2">
-              <TabsList>
+              <TabsList className="mb-2 md:mb-0">
                 <TabsTrigger value="monthly">Vue mensuelle</TabsTrigger>
                 <TabsTrigger value="all">Toutes les transactions</TabsTrigger>
               </TabsList>
               
-              <div className="flex gap-2 w-full md:w-auto">
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-[200px]"
-                />
-                
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex gap-2">
-                      <Filter className="h-4 w-4" />
-                      Filtres
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="space-y-4">
-                      <h4 className="font-medium">Filtrer par type</h4>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="revenu"
-                          checked={typeFilter.includes('revenu')}
-                          onCheckedChange={() => handleTypeFilterChange('revenu')}
-                        />
-                        <Label htmlFor="revenu" className="flex items-center gap-1">
-                          <ArrowUp className="h-4 w-4 text-green-500" /> Revenus
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Checkbox
-                          id="depense"
-                          checked={typeFilter.includes('depense')}
-                          onCheckedChange={() => handleTypeFilterChange('depense')}
-                        />
-                        <Label htmlFor="depense" className="flex items-center gap-1">
-                          <ArrowDown className="h-4 w-4 text-red-500" /> Dépenses
-                        </Label>
-                      </div>
-                      
-                      <h4 className="font-medium">Plage de dates</h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label htmlFor="date-start">Début</Label>
-                          <Input
-                            id="date-start"
-                            type="date"
-                            value={dateRangeStart}
-                            onChange={(e) => setDateRangeStart(e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="date-end">Fin</Label>
-                          <Input
-                            id="date-end"
-                            type="date"
-                            value={dateRangeEnd}
-                            onChange={(e) => setDateRangeEnd(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      
-                      <Button variant="outline" size="sm" onClick={resetFilters} className="w-full">
-                        Réinitialiser les filtres
+              {!isMobile && (
+                <div className="flex gap-2 w-full md:w-auto">
+                  <Input
+                    placeholder="Rechercher..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="max-w-[200px]"
+                  />
+                  
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="flex gap-2">
+                        <Filter className="h-4 w-4" />
+                        Filtres
                       </Button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="space-y-4">
+                        <h4 className="font-medium">Filtrer par type</h4>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="revenu"
+                            checked={typeFilter.includes('revenu')}
+                            onCheckedChange={() => handleTypeFilterChange('revenu')}
+                          />
+                          <Label htmlFor="revenu" className="flex items-center gap-1">
+                            <ArrowUp className="h-4 w-4 text-green-500" /> Revenus
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Checkbox
+                            id="depense"
+                            checked={typeFilter.includes('depense')}
+                            onCheckedChange={() => handleTypeFilterChange('depense')}
+                          />
+                          <Label htmlFor="depense" className="flex items-center gap-1">
+                            <ArrowDown className="h-4 w-4 text-red-500" /> Dépenses
+                          </Label>
+                        </div>
+                        
+                        <h4 className="font-medium">Plage de dates</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label htmlFor="date-start">Début</Label>
+                            <Input
+                              id="date-start"
+                              type="date"
+                              value={dateRangeStart}
+                              onChange={(e) => setDateRangeStart(e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="date-end">Fin</Label>
+                            <Input
+                              id="date-end"
+                              type="date"
+                              value={dateRangeEnd}
+                              onChange={(e) => setDateRangeEnd(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        
+                        <Button variant="outline" size="sm" onClick={resetFilters} className="w-full">
+                          Réinitialiser les filtres
+                        </Button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
             </div>
             
             {loading ? (
@@ -386,7 +495,9 @@ export default function Transactions() {
                           <th className="text-left p-3 font-medium">Type</th>
                           <th className="text-left p-3 font-medium">Description</th>
                           <th className="text-left p-3 font-medium">Montant</th>
-                          <th className="text-left p-3 font-medium">Colocataire</th>
+                          {!isMobile && (
+                            <th className="text-left p-3 font-medium">Colocataire</th>
+                          )}
                           <th className="text-right p-3 font-medium">Actions</th>
                         </tr>
                       </thead>
@@ -406,7 +517,7 @@ export default function Transactions() {
                                   ) : (
                                     <ArrowDown className="h-4 w-4 mr-1 text-red-500" />
                                   )}
-                                  {transaction.type === 'revenu' ? 'Revenu' : 'Dépense'}
+                                  {!isMobile && (transaction.type === 'revenu' ? 'Revenu' : 'Dépense')}
                                 </div>
                               </td>
                               <td className="p-3">
@@ -415,14 +526,21 @@ export default function Transactions() {
                                   {transaction.categorie && (
                                     <p className="text-xs text-muted-foreground">{transaction.categorie}</p>
                                   )}
+                                  {isMobile && roommate && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {roommate.prenom} {roommate.nom}
+                                    </p>
+                                  )}
                                 </div>
                               </td>
                               <td className={`p-3 font-medium ${transaction.type === 'revenu' ? 'text-green-600' : 'text-red-600'}`}>
                                 {transaction.type === 'revenu' ? '+' : '-'}{Number(transaction.montant).toFixed(2)} €
                               </td>
-                              <td className="p-3">
-                                {roommate ? `${roommate.prenom} ${roommate.nom}` : '-'}
-                              </td>
+                              {!isMobile && (
+                                <td className="p-3">
+                                  {roommate ? `${roommate.prenom} ${roommate.nom}` : '-'}
+                                </td>
+                              )}
                               <td className="p-3 text-right">
                                 <div className="flex justify-end items-center space-x-2">
                                   <Button

@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProperty, setSelectedProperty] = useState<string>('all');
+  const [userNiveau, setUserNiveau] = useState<'free' | 'plus' | 'pro'>('free');
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -27,6 +28,21 @@ export default function Dashboard() {
 
       try {
         setLoading(true);
+        
+        // Fetch user niveau from profiles table
+        const { data: userData, error: userError } = await supabase
+          .from('profils')
+          .select('niveau_compte')
+          .eq('id', user.id)
+          .single();
+          
+        if (userError) {
+          console.error('Error fetching user niveau:', userError);
+        } else {
+          // Set user niveau state
+          setUserNiveau(userData?.niveau_compte || 'free');
+        }
+        
         const { data, error } = await supabase
           .from('proprietes')
           .select('*')
@@ -40,7 +56,6 @@ export default function Dashboard() {
         // If there are properties, fetch transactions
         if (data && data.length > 0) {
           // Determine period based on user account level
-          const userNiveau = user?.niveau_compte || 'free';
           const period = userNiveau === 'pro' ? 12 : userNiveau === 'plus' ? 6 : 3;
           const startDate = format(subMonths(startOfMonth(new Date()), period - 1), 'yyyy-MM-dd');
           
@@ -85,10 +100,7 @@ export default function Dashboard() {
     
     // Basic stats that appear in all dashboards
     const statsComponent = <DashboardStats transactions={filteredTransactions} />;
-
-    // Default to free if niveau_compte is not defined
-    const userNiveau = user?.niveau_compte || 'free';
-
+    
     // Render dashboard based on account level
     switch (userNiveau) {
       case 'plus':
